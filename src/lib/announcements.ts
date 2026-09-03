@@ -1,5 +1,16 @@
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "./firebase";
+import {
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase";
 
 export type Announcement = {
   id: string;
@@ -24,4 +35,38 @@ export async function getActiveAnnouncements(): Promise<Announcement[]> {
   return snap.docs
     .map((d) => ({ id: d.id, ...(d.data() as Omit<Announcement, "id">) }))
     .filter((a) => a.active !== false);
+}
+
+// For the admin panel — returns every announcement regardless of active
+// status, so staff can see and re-enable hidden/expired ones too.
+export async function getAllAnnouncements(): Promise<Announcement[]> {
+  const q = query(collection(db, "website_announcements"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Announcement, "id">) }));
+}
+
+export async function createAnnouncement(data: Omit<Announcement, "id">) {
+  return addDoc(collection(db, "website_announcements"), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function updateAnnouncement(id: string, data: Partial<Omit<Announcement, "id">>) {
+  return updateDoc(doc(db, "website_announcements", id), data);
+}
+
+export async function deleteAnnouncement(id: string) {
+  return deleteDoc(doc(db, "website_announcements", id));
+}
+
+// Uploads an image to Storage under website-public/announcements/ and
+// returns the correct public download URL — never a gs:// path, so this
+// permanently avoids the "pasted the wrong kind of URL" mistake.
+export async function uploadAnnouncementImage(file: File): Promise<string> {
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `website-public/announcements/${Date.now()}-${cleanName}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 }
