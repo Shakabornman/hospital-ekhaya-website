@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import RoofDivider from "@/components/RoofDivider";
+import AnnouncementsSection from "@/components/AnnouncementsSection";
 
 const stats = [
   { num: "24/7", label: "Emergency care" },
@@ -110,6 +111,8 @@ export default function Home() {
         </div>
         <RoofDivider />
       </section>
+
+      <AnnouncementsSection />
 
       {/* About preview */}
       <section className="bg-bone-2 py-16 sm:py-20">

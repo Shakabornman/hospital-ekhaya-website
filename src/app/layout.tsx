@@ -6,6 +6,7 @@ import "@fontsource/work-sans/400.css";
 import "@fontsource/work-sans/500.css";
 import "@fontsource/work-sans/600.css";
 import Navbar from "@/components/Navbar";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import Footer from "@/components/Footer";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans">
         <Navbar />
+        <AnnouncementBar />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
