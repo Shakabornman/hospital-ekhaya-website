@@ -3,21 +3,32 @@
 import { useEffect, useState } from "react";
 import { getActiveAnnouncements, type Announcement } from "@/lib/announcements";
 
+const ROTATE_MS = 6000;
+
 export default function AnnouncementBar() {
-  const [item, setItem] = useState<Announcement | null>(null);
+  const [items, setItems] = useState<Announcement[]>([]);
+  const [index, setIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     getActiveAnnouncements()
-      .then((list) => {
-        if (list.length) setItem(list[0]);
-      })
+      .then(setItems)
       .catch(() => {
         // Fails quietly — a missing banner shouldn't break the rest of the site
       });
   }, []);
 
-  if (!item || dismissed) return null;
+  useEffect(() => {
+    if (items.length < 2) return;
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % items.length);
+    }, ROTATE_MS);
+    return () => clearInterval(timer);
+  }, [items.length]);
+
+  if (items.length === 0 || dismissed) return null;
+
+  const item = items[index];
 
   return (
     <div className="relative bg-maroon text-cream px-[5%] py-2.5 flex items-center justify-center gap-3 flex-wrap text-[13.5px] text-center">
@@ -35,6 +46,22 @@ export default function AnnouncementBar() {
           {item.ctaLabel || "Learn more"}
         </a>
       )}
+
+      {items.length > 1 && (
+        <div className="flex items-center gap-1.5 ml-1">
+          {items.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Show announcement ${i + 1}`}
+              onClick={() => setIndex(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-opacity ${
+                i === index ? "bg-cream opacity-100" : "bg-cream opacity-35"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
       <button
         aria-label="Dismiss announcement"
         onClick={() => setDismissed(true)}

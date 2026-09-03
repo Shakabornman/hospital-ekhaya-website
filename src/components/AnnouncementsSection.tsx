@@ -76,6 +76,14 @@ export default function AnnouncementsSection() {
                     {a.description}
                   </p>
                 )}
+                {a.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={a.imageUrl}
+                    alt={a.title}
+                    className="mb-4 w-full max-w-xs rounded-md border border-teal-900/10"
+                  />
+                )}
                 <div className="flex flex-wrap items-center gap-4">
                   {a.deadlineLabel && (
                     <span className="text-[13px] font-medium text-teal-900">
