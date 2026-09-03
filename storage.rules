@@ -1,0 +1,217 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── HR DOCUMENTS ──────────────────────────────────────────────────────────
+    // Employee document folders — HR and COO read/write only.
+    // Hardcoded emails flagged for future migration to access_control pattern.
+    match /hr-documents/{employeeId}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        request.auth.token.email == 'shakabornman@gmail.com' ||
+        request.auth.token.email == 'aphentela@gmail.com' ||
+        request.auth.token.email == 'carleenphentela@icloud.com'
+      );
+      allow write: if request.auth != null && (
+        request.auth.token.email == 'shakabornman@gmail.com' ||
+        request.auth.token.email == 'aphentela@gmail.com' ||
+        request.auth.token.email == 'carleenphentela@icloud.com'
+      );
+    }
+
+    // ── DISCIPLINARY DOCUMENTS ────────────────────────────────────────────────
+    // Issued documents and signed receipts per case and stage.
+    // HR and Executive access only — no staff access to disciplinary files.
+    // Path: disciplinary-documents/{employeeNumber}/{caseId}/{stageId}/{file}
+    match /disciplinary-documents/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['executive', 'hr']);
+    }
+
+    // ── POLICIES & PROCEDURES ─────────────────────────────────────────────────
+    // Policy documents — all authenticated staff can read. COO writes only.
+    match /policies/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.email == 'shakabornman@gmail.com';
+    }
+
+    // ── SOPs ──────────────────────────────────────────────────────────────────
+    // Standard Operating Procedures — all authenticated staff can read. COO writes only.
+    match /sops/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.email == 'shakabornman@gmail.com';
+    }
+
+    // ── PUBLICATIONS ──────────────────────────────────────────────────────────
+    // Notices and forms — all authenticated staff can read. COO writes only.
+    match /publications/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.email == 'shakabornman@gmail.com';
+    }
+
+    // ── RISK ATTACHMENTS ──────────────────────────────────────────────────────
+    // Supporting files attached to risk register entries.
+    // COO and CEO read only. Any authenticated user may upload.
+    match /risk-attachments/{riskId}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        request.auth.token.email == 'shakabornman@gmail.com' ||
+        request.auth.token.email == 'phentela@vumads.co.za'
+      );
+      allow write: if request.auth != null;
+    }
+
+    // ── TIMESHEETS ────────────────────────────────────────────────────────────
+    // Scanned timesheet uploads per employee folder.
+    // Any authenticated user may upload their own. HR and COO read all.
+    match /timesheets/{employeeId}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        request.auth.token.email == 'shakabornman@gmail.com' ||
+        request.auth.token.email == 'aphentela@gmail.com'
+      );
+      allow write: if request.auth != null;
+    }
+
+    // ── P&P MODULE (active documents) ────────────────────────────────────────
+    // Policies and procedures uploaded via the P&P module.
+    // All authenticated staff can read. Executive access required to write.
+    match /pp/{volume}/{docType}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevel == 'executive';
+    }
+
+    // ── P&P ARCHIVE ───────────────────────────────────────────────────────────
+    // Archived/superseded policy documents. Executive access only.
+    match /pp-archive/{volume}/{fileName} {
+      allow read, write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevel == 'executive';
+    }
+
+    // ── BOARD DOCUMENT LIBRARY ────────────────────────────────────────────────
+    // Notices, Agendas, Minutes, Resolutions. Executive and Board tier only —
+    // mirrors the board_documents / board_documents_archive Firestore rules.
+    // Path: board-documents/{type}/{timestamp}_{fileName}
+    match /board-documents/{type}/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['executive', 'board']);
+    }
+
+    // ── HAE PHARMACY MODULE — scans, presales, invoices ──────────────────────
+    // Originals retained for audit trail (Pharmacy Act / OHSC retention), kept
+    // independent of the system's extracted/actioned record. Added [date of
+    // deploy] to close the "extract-and-discard" gap identified in the Trifour
+    // Import session — see HAE_Pharmacy_Session_Handover for context.
+    //
+    // Scanned handwritten stock requests — uploaded from the Upload Scan tab.
+    // Path: pharmacy/scans/{requestId}/{timestamp}_{fileName}
+    match /pharmacy/scans/{requestId}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['finance', 'executive']) ||
+        firestore.get(
+          /databases/(default)/documents/pharmacy_requests/$(requestId)
+        ).data.requestedByUid == request.auth.uid
+      );
+      allow write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['finance', 'executive']);
+    }
+
+    // Presale PDFs from suppliers — uploaded via the presale upload modal on Orders.
+    // Path: pharmacy/presales/{orderId}/{timestamp}_{fileName}
+    match /pharmacy/presales/{orderId}/{allPaths=**} {
+      allow read: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['finance', 'executive']);
+      allow write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['finance', 'executive']);
+    }
+
+    // Supplier invoice PDFs — uploaded via the Capture Invoice modal.
+    // Path: pharmacy/invoices/{invoiceId}/{timestamp}_{fileName}
+    match /pharmacy/invoices/{invoiceId}/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['finance', 'executive']);
+    }
+
+    // ── OHSC COMPLIANCE MODULE — assessment evidence ──────────────────────────
+    // Photos/documents attached when logging a Partial or Non-Compliant
+    // assessment. Path: ohsc-evidence/{criterionRef}/{timestamp}_{fileName}
+    // Department is looked up from the criterion itself (not trusted from
+    // the client), same cross-reference pattern as pharmacy/scans above —
+    // so access follows whoever owns that criterion's department, not
+    // whatever the uploader's own department happens to be.
+    match /ohsc-evidence/{criterionRef}/{allPaths=**} {
+      allow read: if request.auth != null && (
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['executive']) ||
+        (firestore.get(
+          /databases/(default)/documents/ohscCriteria/$(criterionRef)
+        ).data.department == 'Support Services' &&
+         firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['ohsc-support'])) ||
+        (firestore.get(
+          /databases/(default)/documents/ohscCriteria/$(criterionRef)
+        ).data.department == 'Kitchen' &&
+         firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['ohsc-kitchen']))
+      );
+      allow write: if request.auth != null && (
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['executive']) ||
+        (firestore.get(
+          /databases/(default)/documents/ohscCriteria/$(criterionRef)
+        ).data.department == 'Support Services' &&
+         firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['ohsc-support'])) ||
+        (firestore.get(
+          /databases/(default)/documents/ohscCriteria/$(criterionRef)
+        ).data.department == 'Kitchen' &&
+         firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['ohsc-kitchen']))
+      );
+    }
+
+    // ── PUBLIC WEBSITE (hospitalekhaya.co.za) ─────────────────────────────────
+    // Public-facing images only (event posters, banners, etc). Anyone can
+    // read; only staff with 'website-admin' (or executive) can upload,
+    // mirroring the Firestore website_* collection rules. Never put
+    // anything sensitive under this path — it's genuinely public.
+    match /website-public/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/access_control/$(request.auth.uid)
+        ).data.accessLevels.hasAny(['executive', 'website-admin']);
+    }
+
+    // ── CATCH-ALL — deny everything not explicitly listed above ───────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+  }
+}
