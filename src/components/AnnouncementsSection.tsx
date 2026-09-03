@@ -82,6 +82,9 @@ export default function AnnouncementsSection() {
                     src={a.imageUrl}
                     alt={a.title}
                     className="mb-4 w-full max-w-xs rounded-md border border-teal-900/10"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
                   />
                 )}
                 <div className="flex flex-wrap items-center gap-4">

@@ -13,8 +13,8 @@ export default function AnnouncementBar() {
   useEffect(() => {
     getActiveAnnouncements()
       .then(setItems)
-      .catch(() => {
-        // Fails quietly — a missing banner shouldn't break the rest of the site
+      .catch((err) => {
+        console.error("AnnouncementBar: failed to load announcements", err);
       });
   }, []);
 
