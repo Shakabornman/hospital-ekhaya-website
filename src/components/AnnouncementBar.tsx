@@ -12,7 +12,10 @@ export default function AnnouncementBar() {
 
   useEffect(() => {
     getActiveAnnouncements()
-      .then(setItems)
+      .then((list) => {
+        console.log("AnnouncementBar fetched:", list.length, list);
+        setItems(list);
+      })
       .catch((err) => {
         console.error("AnnouncementBar: failed to load announcements", err);
       });
