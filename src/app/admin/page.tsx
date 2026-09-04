@@ -172,8 +172,9 @@ function AnnouncementManager() {
       }
       resetForm();
       await refresh();
-    } catch {
-      setError("Something went wrong saving this. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Something went wrong: ${message}`);
     } finally {
       setSaving(false);
     }

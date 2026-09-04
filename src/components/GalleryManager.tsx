@@ -44,8 +44,9 @@ export default function GalleryManager() {
       setCaption("");
       setFile(null);
       await refresh();
-    } catch {
-      setError("Upload failed. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`Upload failed: ${message}`);
     } finally {
       setSaving(false);
     }
