@@ -14,8 +14,9 @@ export default function GalleryManager() {
   const [photos, setPhotos] = useState<GalleryPhoto[] | null>(null);
   const [category, setCategory] = useState("");
   const [caption, setCaption] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState("");
 
   async function refresh() {
@@ -29,27 +30,41 @@ export default function GalleryManager() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    if (!category.trim() || !file) {
-      setError("Category and a photo file are both required.");
+    if (!category.trim() || files.length === 0) {
+      setError("Category and at least one photo are required.");
       return;
     }
     setSaving(true);
-    try {
-      const imageUrl = await uploadGalleryImage(file, category);
-      await createGalleryPhoto({
-        category: category.trim(),
-        caption: caption.trim() || undefined,
-        imageUrl,
-      });
-      setCaption("");
-      setFile(null);
-      await refresh();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`Upload failed: ${message}`);
-    } finally {
-      setSaving(false);
+    setProgress({ done: 0, total: files.length });
+    let failures = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const imageUrl = await uploadGalleryImage(files[i], category);
+        await createGalleryPhoto({
+          category: category.trim(),
+          caption: caption.trim() || undefined,
+          imageUrl,
+        });
+      } catch (err) {
+        failures++;
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Failed to upload ${files[i].name}:`, message);
+      }
+      setProgress({ done: i + 1, total: files.length });
     }
+
+    if (failures > 0) {
+      setError(
+        `${failures} of ${files.length} photo(s) failed to upload. Check the console for details, the rest were added.`
+      );
+    } else {
+      setCaption("");
+    }
+    setFiles([]);
+    setSaving(false);
+    setProgress(null);
+    await refresh();
   }
 
   async function handleDelete(id: string) {
@@ -67,7 +82,7 @@ export default function GalleryManager() {
         onSubmit={handleSubmit}
         className="bg-white border border-teal-900/8 rounded-tr-[20px] rounded-bl-[20px] p-6 space-y-4 mb-10"
       >
-        <h2 className="font-serif text-lg font-medium text-teal-950">Add a photo</h2>
+        <h2 className="font-serif text-lg font-medium text-teal-950">Add photos</h2>
 
         <div>
           <label className="block text-[13px] font-medium text-teal-900 mb-1.5">
@@ -92,7 +107,7 @@ export default function GalleryManager() {
 
         <div>
           <label className="block text-[13px] font-medium text-teal-900 mb-1.5">
-            Caption (optional)
+            Caption (optional — applied to all photos selected below)
           </label>
           <input
             value={caption}
@@ -103,15 +118,35 @@ export default function GalleryManager() {
 
         <div>
           <label className="block text-[13px] font-medium text-teal-900 mb-1.5">
-            Photo *
+            Photos * (select multiple at once)
           </label>
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            multiple
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
             className="w-full text-sm"
           />
+          {files.length > 0 && (
+            <p className="text-[12px] text-teal-800/60 mt-1">
+              {files.length} photo{files.length > 1 ? "s" : ""} selected
+            </p>
+          )}
         </div>
+
+        {progress && (
+          <div>
+            <div className="h-1.5 bg-bone rounded-full overflow-hidden">
+              <div
+                className="h-full bg-maroon transition-all"
+                style={{ width: `${(progress.done / progress.total) * 100}%` }}
+              />
+            </div>
+            <p className="text-[12px] text-teal-800/60 mt-1">
+              Uploading {progress.done} of {progress.total}…
+            </p>
+          </div>
+        )}
 
         {error && <p className="text-[13px] text-maroon">{error}</p>}
 
@@ -120,7 +155,11 @@ export default function GalleryManager() {
           disabled={saving}
           className="bg-maroon text-cream font-semibold text-sm px-6 py-3 rounded-tr-[10px] rounded-bl-[10px] disabled:opacity-60"
         >
-          {saving ? "Uploading…" : "Add photo"}
+          {saving
+            ? "Uploading…"
+            : files.length > 1
+            ? `Add ${files.length} photos`
+            : "Add photo"}
         </button>
       </form>
 
