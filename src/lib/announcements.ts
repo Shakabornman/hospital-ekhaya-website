@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
+import { resizeImage } from "./imageResize";
 
 export type Announcement = {
   id: string;
@@ -64,9 +65,10 @@ export async function deleteAnnouncement(id: string) {
 // returns the correct public download URL — never a gs:// path, so this
 // permanently avoids the "pasted the wrong kind of URL" mistake.
 export async function uploadAnnouncementImage(file: File): Promise<string> {
-  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const resized = await resizeImage(file);
+  const cleanName = resized.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `website-public/announcements/${Date.now()}-${cleanName}`;
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
+  await uploadBytes(storageRef, resized);
   return getDownloadURL(storageRef);
 }

@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
+import { resizeImage } from "./imageResize";
 
 export type GalleryPhoto = {
   id: string;
@@ -38,11 +39,12 @@ export async function deleteGalleryPhoto(id: string) {
 // Uploads to Storage under website-public/gallery/{category}/ and returns
 // the correct public download URL.
 export async function uploadGalleryImage(file: File, category: string): Promise<string> {
+  const resized = await resizeImage(file);
   const cleanCategory = category.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const cleanName = resized.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `website-public/gallery/${cleanCategory}/${Date.now()}-${cleanName}`;
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
+  await uploadBytes(storageRef, resized);
   return getDownloadURL(storageRef);
 }
 
