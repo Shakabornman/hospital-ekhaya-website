@@ -27,11 +27,14 @@ export default function GalleryGrid() {
             <h2 className="font-serif text-2xl font-medium text-teal-950 mb-6">
               {category}
             </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Masonry via CSS columns — each photo keeps its natural aspect
+                ratio (portrait or landscape) instead of being cropped to fit
+                a fixed box. */}
+            <div className="columns-2 sm:columns-3 gap-4">
               {items.map((photo, j) => (
                 <div
                   key={photo.id}
-                  className={`relative aspect-[4/3] overflow-hidden bg-bone ${
+                  className={`relative mb-4 break-inside-avoid overflow-hidden bg-bone ${
                     j % 5 === 0
                       ? "rounded-tr-[28px] rounded-bl-[28px]"
                       : "rounded-tr-[14px] rounded-bl-[14px]"
@@ -41,7 +44,7 @@ export default function GalleryGrid() {
                   <img
                     src={photo.imageUrl}
                     alt={photo.caption || category}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="block w-full h-auto"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
