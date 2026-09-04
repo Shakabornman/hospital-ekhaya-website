@@ -6,13 +6,13 @@ export default function Footer() {
     <footer className="bg-teal-950 text-cream mt-auto">
       <div className="max-w-6xl mx-auto px-[5%] py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="bg-cream inline-block rounded-tr-[10px] rounded-bl-[10px] px-3 py-1.5 mb-4">
+          <div className="bg-cream inline-block rounded-tr-[10px] rounded-bl-[10px] px-3 py-2 mb-4">
             <Image
               src="/images/brand/logo.png"
               alt="Hospital@Ekhaya logo"
               width={140}
               height={98}
-              className="h-11 w-auto"
+              className="h-16 w-auto"
             />
           </div>
           <p className="text-sm text-[#AECFCB] leading-relaxed">

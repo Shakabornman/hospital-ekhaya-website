@@ -19,14 +19,14 @@ export default function Navbar() {
         </a>
       </div>
 
-      <nav className="bg-teal-900 px-[5%] py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-3 bg-cream rounded-tr-[10px] rounded-bl-[10px] px-3 py-1.5">
+      <nav className="bg-teal-900 px-[5%] py-2.5 flex justify-between items-center">
+        <Link href="/" className="flex items-center gap-3 bg-cream rounded-tr-[10px] rounded-bl-[10px] px-3 py-2">
           <Image
             src="/images/brand/logo.png"
             alt="Hospital@Ekhaya logo"
             width={140}
             height={98}
-            className="h-10 sm:h-12 w-auto"
+            className="h-16 sm:h-20 w-auto"
             priority
           />
         </Link>

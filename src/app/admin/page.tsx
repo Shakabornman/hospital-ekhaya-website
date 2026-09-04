@@ -12,6 +12,7 @@ import {
   deleteAnnouncement,
   uploadAnnouncementImage,
 } from "@/lib/announcements";
+import GalleryManager from "@/components/GalleryManager";
 
 const emptyForm = {
   title: "",
@@ -191,19 +192,7 @@ function AnnouncementManager() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-14 px-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="font-serif text-2xl font-medium text-teal-950">
-          Manage Announcements
-        </h1>
-        <button
-          onClick={() => signOut(auth)}
-          className="text-[13px] text-teal-800/70 underline underline-offset-2"
-        >
-          Sign out
-        </button>
-      </div>
-
+    <div>
       <form
         onSubmit={handleSubmit}
         className="bg-white border border-teal-900/8 rounded-tr-[20px] rounded-bl-[20px] p-6 space-y-4 mb-10"
@@ -396,6 +385,44 @@ function AnnouncementManager() {
   );
 }
 
+function AdminShell() {
+  const [tab, setTab] = useState<"announcements" | "gallery">("announcements");
+
+  return (
+    <div>
+      <div className="max-w-3xl mx-auto px-6 pt-10 flex justify-between items-center mb-8">
+        <div className="flex gap-5">
+          <button
+            onClick={() => setTab("announcements")}
+            className={`font-serif text-xl font-medium ${
+              tab === "announcements" ? "text-teal-950" : "text-teal-800/40"
+            }`}
+          >
+            Announcements
+          </button>
+          <button
+            onClick={() => setTab("gallery")}
+            className={`font-serif text-xl font-medium ${
+              tab === "gallery" ? "text-teal-950" : "text-teal-800/40"
+            }`}
+          >
+            Gallery
+          </button>
+        </div>
+        <button
+          onClick={() => signOut(auth)}
+          className="text-[13px] text-teal-800/70 underline underline-offset-2"
+        >
+          Sign out
+        </button>
+      </div>
+      <div className="max-w-3xl mx-auto px-6 pb-14">
+        {tab === "announcements" ? <AnnouncementManager /> : <GalleryManager />}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { loading, user, isAdmin } = useAdminAuth();
 
@@ -404,5 +431,5 @@ export default function AdminPage() {
   }
   if (!user) return <LoginForm />;
   if (!isAdmin) return <NotAuthorized />;
-  return <AnnouncementManager />;
+  return <AdminShell />;
 }
