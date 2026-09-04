@@ -12,25 +12,26 @@ export async function resizeImage(
   // attribute, but safe to pass through untouched just in case).
   if (!file.type.startsWith("image/")) return file;
 
-  const objectUrl = URL.createObjectURL(file);
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = objectUrl;
-    });
+    // createImageBitmap with imageOrientation: "from-image" reads the
+    // photo's EXIF rotation (phones save portrait photos as landscape
+    // pixel data + a "rotate this" flag) and applies it during decode.
+    // Drawing a plain <img>/Image() onto a canvas does NOT do this —
+    // that was the bug: canvas-processed portrait photos came out
+    // sideways, which looked like a bad crop.
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
 
-    const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
-    const width = Math.round(img.width * scale);
-    const height = Math.round(img.height * scale);
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
 
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", quality)
@@ -43,7 +44,9 @@ export async function resizeImage(
 
     const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
     return new File([blob], newName, { type: "image/jpeg" });
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // If anything about the resize path fails, upload the original file
+    // rather than blocking the upload entirely.
+    return file;
   }
 }

@@ -27,14 +27,15 @@ export default function GalleryGrid() {
             <h2 className="font-serif text-2xl font-medium text-teal-950 mb-6">
               {category}
             </h2>
-            {/* Masonry via CSS columns — each photo keeps its natural aspect
-                ratio (portrait or landscape) instead of being cropped to fit
-                a fixed box. */}
-            <div className="columns-2 sm:columns-3 gap-4">
+            {/* Fixed-height cells with object-contain: every photo is shown
+                in full regardless of orientation. Landscape photos fill the
+                cell; portrait photos letterbox with the bone background
+                rather than ever being cropped. */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((photo, j) => (
                 <div
                   key={photo.id}
-                  className={`relative mb-4 break-inside-avoid overflow-hidden bg-bone ${
+                  className={`relative h-[340px] overflow-hidden bg-bone flex items-center justify-center ${
                     j % 5 === 0
                       ? "rounded-tr-[28px] rounded-bl-[28px]"
                       : "rounded-tr-[14px] rounded-bl-[14px]"
@@ -44,7 +45,7 @@ export default function GalleryGrid() {
                   <img
                     src={photo.imageUrl}
                     alt={photo.caption || category}
-                    className="block w-full h-auto"
+                    className="max-w-full max-h-full w-auto h-auto object-contain"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
